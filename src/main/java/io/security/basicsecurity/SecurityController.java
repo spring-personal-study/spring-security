@@ -11,4 +11,10 @@ public class SecurityController {
         return "home";
     }
 
+    // if enable http.formLogin().loginPage("/loginPage")
+    @GetMapping("loginPage")
+    public String loginPage() {
+        return "loginPage";
+    }
+
 }
