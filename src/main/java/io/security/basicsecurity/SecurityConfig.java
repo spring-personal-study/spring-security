@@ -1,29 +1,22 @@
 package io.security.basicsecurity;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -31,54 +24,81 @@ import java.util.stream.Collectors;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("user1").password("{noop}1111").roles("USER");
+        auth.inMemoryAuthentication().withUser("sys").password("{noop}1234").roles("SYS");
+        auth.inMemoryAuthentication().withUser("admin").password("{noop}4321").roles("ADMIN");
+
+    }
+
+    @Override
     protected void configure(HttpSecurity http) throws Exception {
+
+        // 인가 관리 (인증된 유저에 대하여, 어디까지 접근이 가능한지를 설정)
         http.authorizeRequests()
+                .antMatchers("/user").hasRole("USER")
+                .antMatchers("/admin/pay").hasRole("SYS")
+                .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
                 .anyRequest().authenticated();
+
+        // form 로그인
         http.formLogin()
-                //.loginPage("/loginPage")
-                .defaultSuccessUrl("/")
+                //.defaultSuccessUrl("/")
                 .failureUrl("/login")
                 .usernameParameter("userId")
                 .passwordParameter("passwd")
                 .loginProcessingUrl("/login_proc")
-                .successHandler(new AuthenticationSuccessHandler() {
-                    @Override
-                    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-                        System.out.println("authentication: " + authentication.getName());
-                        response.sendRedirect("/");
-                    }
-                })
-                .failureHandler(new AuthenticationFailureHandler() {
-                    @Override
-                    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
-                        System.out.println("exception: " + exception.getMessage());
-                        response.sendRedirect("/loginPage");
-                    }
+                .successHandler((request, response, authentication) -> {
+                    System.out.println("authentication: " + authentication.getName());
+                    RequestCache cache = new HttpSessionRequestCache();
+                    SavedRequest savedRequest = cache.getRequest(request, response);
+                    String redirectUrl = savedRequest.getRedirectUrl();
+                    response.sendRedirect(redirectUrl);
+                }) // 인증이 성공했다면 유저가 가고자 했던 url로 이동할 수 있게 함.
+                // 인증 또는 인가 실패시 인증/인가 예외처리가 됨 (아래에 예외처리 설정이 있다.)
+
+                .failureHandler((request, response, exception) -> {
+                    System.out.println("exception: " + exception.getMessage());
+                    response.sendRedirect("/login");
                 })
                 .permitAll();
 
+        // 로그아웃 설정
         http.logout()
                 .logoutUrl("/logout")
-                .addLogoutHandler(new LogoutHandler() {
-                    @Override
-                    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                        HttpSession session = request.getSession();
-                        session.invalidate();
-                    }
+                .addLogoutHandler((request, response, authentication) -> {
+                    HttpSession session = request.getSession();
+                    session.invalidate();
                 })
-                .logoutSuccessHandler(new LogoutSuccessHandler() {
-                    @Override
-                    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-                        response.sendRedirect("/login");
-                    }
-                })
+                .logoutSuccessHandler((request, response, authentication) -> response.sendRedirect("/login"))
                 .deleteCookies("remember-me");
 
+        // 리멤버미 (유저 정보 기억) 활성화
         UserDetailsService userDetailsService = new UserDetailsService();
         http.rememberMe()
                 .rememberMeParameter("remember")
                 .tokenValiditySeconds(3600)
                 .userDetailsService(userDetailsService);
+
+        // 세션 관리 활성화
+        http.sessionManagement()
+                .sessionFixation().changeSessionId()
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(true)
+                .expiredUrl("/expired");
+
+        /*
+        // 인증/인증 예외처리 활성화.
+        http.exceptionHandling()
+                .authenticationEntryPoint(((request, response, authException) -> {
+                    System.out.println("인증 실패");
+                    response.sendRedirect("/login");
+                })) //인증 예외 처리 인터페이스
+                .accessDeniedHandler(((request, response, accessDeniedException) -> {
+                    System.out.println("인가 실패");
+                    response.sendRedirect("/denied");
+                })); // 인가 예외 처리 인터페이스
+         */
     }
 }
 
