@@ -16,19 +16,22 @@ import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    // @Bean public PasswordEncoder getPasswordEncoder() { return new BCryptPasswordEncoder(); }
+
+    //@Bean public InMemoryUserDetailsManager inMemoryUserDetailsManager() { return new InMemoryUserDetailsManager(); }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication().withUser("user1").password("{noop}1111").roles("USER");
+        auth.inMemoryAuthentication().withUser("user").password("{noop}1111").roles("USER");
         auth.inMemoryAuthentication().withUser("sys").password("{noop}1234").roles("SYS");
         auth.inMemoryAuthentication().withUser("admin").password("{noop}4321").roles("ADMIN");
-
+       // auth.userDetailsService(inMemoryUserDetailsManager());
     }
 
     @Override
@@ -52,13 +55,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     System.out.println("authentication: " + authentication.getName());
                     RequestCache cache = new HttpSessionRequestCache();
                     SavedRequest savedRequest = cache.getRequest(request, response);
-                    String redirectUrl = savedRequest.getRedirectUrl();
-                    response.sendRedirect(redirectUrl);
+                    if (savedRequest != null) {
+                        String redirectUrl = savedRequest.getRedirectUrl();
+                        response.sendRedirect(redirectUrl);
+                    }
                 }) // 인증이 성공했다면 유저가 가고자 했던 url로 이동할 수 있게 함.
                 // 인증 또는 인가 실패시 인증/인가 예외처리가 됨 (아래에 예외처리 설정이 있다.)
 
                 .failureHandler((request, response, exception) -> {
                     System.out.println("exception: " + exception.getMessage());
+                  //  System.out.println("inMemoryConfiguration.loadUserByUsername(\"user1\").getPassword(): " + inMemoryUserDetailsManager.userExists("user1"));
                     response.sendRedirect("/login");
                 })
                 .permitAll();
