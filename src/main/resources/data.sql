@@ -1,1 +1,1 @@
--- insert into users values (  );
+insert into users values ( 1 );
