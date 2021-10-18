@@ -1,0 +1,33 @@
+spring:
+    datasource:
+        url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
+
+    jpa:
+        hibernate:
+            ddl-auto: create
+        properties:
+            hibernate:
+                format_sql: true
+                show_sql: true
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+                jdbc:
+                    lob:
+                        non_contextual_creation=true
+
+    thymeleaf:
+        cache: false
+
+    devtools:
+        livereload:
+            enabled: true
+        restart:
+            enabled: true
+
+    main:
+        allow-bean-definition-overriding: true
+
+#    profiles:
+#        active: pointcut
