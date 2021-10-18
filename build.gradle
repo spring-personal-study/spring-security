@@ -15,17 +15,21 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.5.5'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:2.5.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.5.5'
+    implementation 'org.springframework.boot:spring-boot-starter-security:2.5.5'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.5'
+
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.0.4.RELEASE'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket:2.5.5'
+
     runtimeOnly 'org.springframework.boot:spring-boot-devtools:2.5.5'
+    implementation 'org.springframework.boot:spring-boot-configuration-processor:2.5.5'
+
     implementation 'org.projectlombok:lombok:1.18.22'
     annotationProcessor('org.projectlombok:lombok:1.18.22')
-    implementation 'org.springframework.boot:spring-boot-configuration-processor:2.5.5'
+
     implementation 'org.modelmapper:modelmapper:2.4.4'
 
     implementation 'com.h2database:h2:1.4.200'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.5'
-    implementation 'org.springframework.boot:spring-boot-starter-security:2.5.5'
 }
 
 test {
