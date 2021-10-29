@@ -8,7 +8,9 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,6 +44,12 @@ public class LoginController {
         model.addAttribute("exception", exception);
 
         return "user/login/denied";
+    }
+
+    @PostMapping("/api/login")
+    @ResponseBody
+    public String ajaxLogin() {
+        return "{\"result\":\"success\"}";
     }
 
 }

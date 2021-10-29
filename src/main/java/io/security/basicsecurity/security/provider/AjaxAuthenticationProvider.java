@@ -2,27 +2,29 @@ package io.security.basicsecurity.security.provider;
 
 import io.security.basicsecurity.security.common.FormWebAuthenticationDetails;
 import io.security.basicsecurity.security.service.AccountContext;
+import io.security.basicsecurity.security.token.AjaxAuthenticationToken;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.apache.naming.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
-import org.springframework.stereotype.Component;
 
-@Component("authenticationProvider")
-@RequiredArgsConstructor
-public class CustomAuthenticationProvider implements AuthenticationProvider {
+@NoArgsConstructor
+public class AjaxAuthenticationProvider implements AuthenticationProvider {
 
-    private final UserDetailsService userDetailsService;
+    private UserDetailsService userDetailsService;
     private PasswordEncoder passwordEncoder;
 
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
+    @Autowired
+    public void setUserDetailsService(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
     }
 
     /**
@@ -49,24 +51,25 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             throw new BadCredentialsException("인증 실패. 비밀번호가 다릅니다.");
         }
 
-        // secret_key 추가 검증. 아이디와 비밀번호 외에 유저에게서 인증정보를 더 추가로 필요로 받아야하는 경우 사용한다.
+        // secret_key 추가 검증
         WebAuthenticationDetails details = (WebAuthenticationDetails) authentication.getDetails();
-        FormWebAuthenticationDetails secret = (FormWebAuthenticationDetails) details; // 시큐리티설정에서
-                                                                                      // .authenticationDetailsSource(authenticationDetailsSource)
-                                                                                      // 를 설정하지 않으면 캐스팅 못함
+        FormWebAuthenticationDetails secret = (FormWebAuthenticationDetails) details;
+        // 시큐리티설정에서
+        // .authenticationDetailsSource(authenticationDetailsSource)
+        // 를 설정하지 않으면 캐스팅 못함
         if (secret.getSecretKey() == null || !secret.getSecretKey().equals("secret")) {
             throw new InsufficientAuthenticationException("인증하는데 필요한 정보가 불충분합니다.");
         }
 
-        return new UsernamePasswordAuthenticationToken(userDetails.getAccount(), null, userDetails.getAuthorities());
+        return new AjaxAuthenticationToken(userDetails.getAccount(), null, userDetails.getAuthorities());
     }
 
     /**
-     * @param authentication 이 파라매터와 CustomAuthenticationProvider 가 사용하고자 하는 토큰의 타입이 일치할 때 Provider 가 인증처리를 할 수 있도록 설정
+     * @param authentication 이 파라매터와 AjaxAuthenticationProvider 가 사용하고자 하는 토큰의 타입이 일치할 때 Provider 가 인증처리를 할 수 있도록 설정
      * @return 인증 처리 가능 여부
      */
     @Override
     public boolean supports(Class<?> authentication) {
-        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+        return authentication.isAssignableFrom(AjaxAuthenticationToken.class);
     }
 }
